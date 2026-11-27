@@ -1,0 +1,69 @@
+
+name: Roohu ClipForge APK Build
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'Roohu-ClipForge-M28.zip'
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract project
+        run: |
+          test -f Roohu-ClipForge-M28.zip
+          mkdir extracted
+          unzip -q Roohu-ClipForge-M28.zip -d extracted
+          echo "ZIP extracted. Project files:"
+          find extracted -maxdepth 4 -type f | head -200
+
+      - name: Find Android project
+        run: |
+          PROJECT_DIR=$(find extracted -type f \
+            \( -name settings.gradle -o -name settings.gradle.kts \) \
+            -print -quit | xargs -r dirname)
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "Could not find settings.gradle or settings.gradle.kts"
+            exit 1
+          fi
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Found project: $PROJECT_DIR"
+
+      - name: Build debug APK
+        run: |
+          cd "$PROJECT_DIR"
+
+          if [ -f ./gradlew ]; then
+            chmod +x ./gradlew
+            ./gradlew assembleDebug --no-daemon
+          else
+            sudo apt-get update
+            sudo apt-get install -y gradle
+            gradle assembleDebug --no-daemon
+          fi
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Roohu-ClipForge-debug-APK
+          path: |
+            **/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
