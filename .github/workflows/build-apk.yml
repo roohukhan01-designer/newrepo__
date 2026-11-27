@@ -39,12 +39,12 @@ jobs:
           unzip -q Roohu-ClipForge-M28.zip -d extracted
           echo "Extracted project files:"
           find extracted -maxdepth 5 -type f | sort | head -250
-          PROJECT_DIR="$(find extracted -type f \\( -name settings.gradle -o -name settings.gradle.kts \\) -print -quit | xargs -r dirname)"
+          PROJECT_DIR="$(find extracted -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit | xargs -r dirname)"
           if [ -z "$PROJECT_DIR" ]; then
             echo "::error::No settings.gradle or settings.gradle.kts found in ZIP."
             exit 1
           fi
-          if ! find "$PROJECT_DIR" -maxdepth 2 -type f \\( -name build.gradle -o -name build.gradle.kts \\) | grep -q .; then
+          if ! find "$PROJECT_DIR" -maxdepth 2 -type f \( -name build.gradle -o -name build.gradle.kts \) | grep -q .; then
             echo "::error::Gradle build files were not found beside the settings file."
             exit 1
           fi
