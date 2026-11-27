@@ -63,12 +63,30 @@ jobs:
             echo "sdkmanager is not on PATH; Gradle will use the runner Android SDK."
           fi
 
+      - name: Align legacy Kotlin runtime dependencies
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/kotlin-runtime-fix.gradle" <<'GRADLE'
+          allprojects {
+            configurations.configureEach {
+              resolutionStrategy.eachDependency { details ->
+                if (details.requested.group == "org.jetbrains.kotlin" &&
+                    (details.requested.name == "kotlin-stdlib-jdk7" ||
+                     details.requested.name == "kotlin-stdlib-jdk8")) {
+                  details.useVersion("1.8.22")
+                  details.because("Align legacy JDK extension artifacts with kotlin-stdlib 1.8.22 and prevent duplicate classes")
+                }
+              }
+            }
+          }
+          GRADLE
+
       - name: Build debug APK
         shell: bash
         run: |
           set -euo pipefail
           cd "$PROJECT_DIR"
-          gradle --no-daemon --stacktrace assembleDebug
+          gradle --no-daemon --stacktrace --init-script "$RUNNER_TEMP/kotlin-runtime-fix.gradle" assembleDebug
 
       - name: Verify APK output
         shell: bash
